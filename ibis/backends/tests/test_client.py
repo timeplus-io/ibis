@@ -372,6 +372,7 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
+@pytest.mark.notyet(["timeplus"])
 def test_rename_table(con, temp_table, temp_table_orig):
     schema = ibis.schema({"a": "string", "b": "bool", "c": "int32"})
     con.create_table(temp_table_orig, schema=schema)
@@ -504,6 +505,7 @@ def test_insert_no_overwrite_from_dataframe(
     con.insert(employee_empty_temp_table, obj=test_employee_data_2, overwrite=False)
     result = temporary.execute()
     assert len(result) == 3
+
     backend.assert_frame_equal(
         result.sort_values("first_name").reset_index(drop=True),
         test_employee_data_2.sort_values("first_name").reset_index(drop=True),
@@ -635,6 +637,7 @@ def test_insert_from_memtable(con, temp_table):
         "polars",
         "flink",
         "sqlite",
+        "timeplus",
     ],
     raises=AttributeError,
     reason="doesn't support the common notion of a catalog",
@@ -685,6 +688,7 @@ def test_list_database_contents(con):
         "sqlite": {"main"},
         "trino": {"default", "information_schema"},
         "databricks": {"default"},
+        "timeplus": {"system", "default", "ibis_testing"},
     }
     result = set(con.list_databases())
     assert test_databases[con.name] <= result
@@ -917,6 +921,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "risingwave",
                         "snowflake",
                         "sqlite",
+                        "timeplus",
                         "trino",
                         "databricks",
                     ]
@@ -927,6 +932,27 @@ def test_self_join_memory_table(backend, con, monkeypatch):
         param(
             lambda: pa.table({"a": ["a"], "b": [1]}).to_batches()[0],
             "df_arrow_single_batch",
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "duckdb",
+                        "exasol",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "oracle",
+                        "postgres",
+                        "pyspark",
+                        "risingwave",
+                        "snowflake",
+                        "sqlite",
+                        "timeplus",
+                        "trino",
+                    ]
+                )
+            ],
             id="pyarrow_single_batch",
         ),
         param(
@@ -947,6 +973,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "risingwave",
                         "snowflake",
                         "sqlite",
+                        "timeplus",
                         "trino",
                         "databricks",
                     ],
@@ -1297,7 +1324,9 @@ def test_set_backend_url(url, monkeypatch):
     ],
     reason="backend doesn't support timestamp with scale parameter",
 )
-@pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
+@pytest.mark.notimpl(
+    ["clickhouse", "timeplus"], reason="create table isn't implemented"
+)
 @pytest.mark.notimpl(
     ["snowflake"], reason="scale not implemented in ibis's snowflake backend"
 )
@@ -1417,6 +1446,34 @@ def test_create_database(con_create_database):
     assert database not in con_create_database.list_databases()
 
 
+def test_list_schema_warns(con_list_schema):
+    with pytest.warns(FutureWarning):
+        con_list_schema.list_schemas()
+
+
+@pytest.mark.never(
+    [
+        "clickhouse",
+        "mysql",
+        "pyspark",
+        "flink",
+        "timeplus",
+    ],
+    reason="No schema methods",
+)
+def test_create_schema(con_create_database):
+    schema = gen_name("test_create_schema")
+    with pytest.warns(FutureWarning):
+        con_create_database.create_schema(schema)
+    with pytest.warns(FutureWarning):
+        assert schema in con_create_database.list_schemas()
+        schema = schema.lower()
+    with pytest.warns(FutureWarning):
+        con_create_database.drop_schema(schema)
+    with pytest.warns(FutureWarning):
+        assert schema not in con_create_database.list_schemas()
+
+
 def test_list_databases(con_create_database):
     databases = con_create_database.list_databases()
     assert len(databases) == len(set(databases))
@@ -1477,7 +1534,7 @@ def test_close_connection(con):
 
 
 @pytest.mark.notyet(
-    ["clickhouse"],
+    ["clickhouse", "timeplus"],
     raises=AttributeError,
     reason="JSON extension is experimental and not enabled by default in testing",
 )
@@ -1695,7 +1752,9 @@ def test_cross_database_join(con_create_database, monkeypatch):
 @pytest.mark.notimpl(
     ["druid"], raises=AttributeError, reason="doesn't implement `raw_sql`"
 )
-@pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
+@pytest.mark.notimpl(
+    ["clickhouse", "timeplus"], reason="create table isn't implemented"
+)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["polars"], reason="Doesn't support insert")
 @pytest.mark.notyet(["exasol"], reason="Backend does not support raw_sql")

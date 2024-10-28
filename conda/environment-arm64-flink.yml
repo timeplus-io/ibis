@@ -26,6 +26,7 @@ dependencies:
   - pins >=0.8.2
   - uv>=0.4.29
   - polars >=1,<2
+  - proton-driver >=0.2.10
   - psycopg2 >=2.8.4
   - pyarrow =11.0.0
   - pyarrow-tests

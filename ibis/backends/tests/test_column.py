@@ -20,6 +20,7 @@ import ibis.common.exceptions as com
         "risingwave",
         "pyspark",
         "snowflake",
+        "timeplus",
         "trino",
         "druid",
         "flink",

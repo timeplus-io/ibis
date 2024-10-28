@@ -32,6 +32,7 @@ def test_version(backend):
         "mysql",
         "impala",
         "flink",
+        "timeplus",
     ],
     reason="backend does not support catalogs",
     raises=AttributeError,

@@ -193,6 +193,14 @@ risingwave = [
   "pandas>=1.5.3,<3",
   "rich>=12.4.4,<14",
 ]
+timeplus = [
+  "proton-driver",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
 trino = [
   "trino>=0.321,<1",
   "pyarrow>=10.0.1,<19",
@@ -289,6 +297,7 @@ risingwave = "ibis.backends.risingwave"
 pyspark = "ibis.backends.pyspark"
 snowflake = "ibis.backends.snowflake"
 sqlite = "ibis.backends.sqlite"
+timeplus = "ibis.backends.timeplus"
 trino = "ibis.backends.trino"
 
 [build-system]
@@ -434,6 +443,7 @@ markers = [
   "pyspark: PySpark tests",
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
+  "timeplus: Timeplus tests",
   "trino: Trino tests",
   "tpch: TPC-H tests",
   "tpcds: TPC-DS tests",

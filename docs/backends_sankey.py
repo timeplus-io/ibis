@@ -40,6 +40,7 @@ backend_categories = {
         "RisingWave",
         "Snowflake",
         "SQLite",
+        "Timeplus",
         "Trino",
     ],
     list(category_colors.keys())[2]: ["Polars"],

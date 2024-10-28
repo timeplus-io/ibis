@@ -490,3 +490,88 @@ Databricks.Generator.TRANSFORMS |= {
         ]
     )
 }
+
+class Timeplus(ClickHouse):
+    """Subclass of ClickHouse dialect for Timeplus.
+
+    This is here to allow referring to the Clickhouse dialect as "Timeplus"
+    """
+
+    class Generator(ClickHouse.Generator):
+        TYPE_MAPPING = ClickHouse.Generator.TYPE_MAPPING.copy() | {
+            sge.DataType.Type.NULLABLE: "nullable",
+        }
+        STRING_TYPE_MAPPING = ClickHouse.Generator.STRING_TYPE_MAPPING.copy() | {
+            sge.DataType.Type.CHAR: "string",
+            sge.DataType.Type.LONGBLOB: "string",
+            sge.DataType.Type.LONGTEXT: "string",
+            sge.DataType.Type.MEDIUMBLOB: "string",
+            sge.DataType.Type.MEDIUMTEXT: "string",
+            sge.DataType.Type.TINYBLOB: "string",
+            sge.DataType.Type.TINYTEXT: "string",
+            sge.DataType.Type.TEXT: "string",
+            sge.DataType.Type.VARBINARY: "string",
+            sge.DataType.Type.VARCHAR: "string",
+        }
+        TYPE_MAPPING |= {
+            **STRING_TYPE_MAPPING,
+            sge.DataType.Type.ARRAY: "array",
+            sge.DataType.Type.BIGINT: "int64",
+            sge.DataType.Type.BOOLEAN: "boolean",
+            sge.DataType.Type.DATE32: "date32",
+            sge.DataType.Type.DATETIME: "dateTime",
+            sge.DataType.Type.DATETIME64: "dateTime64",
+            sge.DataType.Type.TIMESTAMP: "dateTime64",
+            sge.DataType.Type.TIMESTAMPTZ: "dateTime",
+            sge.DataType.Type.DOUBLE: "float64",
+            sge.DataType.Type.ENUM: "enum",
+            sge.DataType.Type.ENUM8: "enum8",
+            sge.DataType.Type.ENUM16: "enum16",
+            sge.DataType.Type.FIXEDSTRING: "fixed_string",
+            sge.DataType.Type.FLOAT: "float32",
+            sge.DataType.Type.INT: "int32",
+            sge.DataType.Type.MEDIUMINT: "int32",
+            sge.DataType.Type.INT128: "int128",
+            sge.DataType.Type.INT256: "int256",
+            sge.DataType.Type.LOWCARDINALITY: "low_cardinality",
+            sge.DataType.Type.MAP: "map",
+            sge.DataType.Type.NESTED: "nested",
+            sge.DataType.Type.SMALLINT: "int16",
+            sge.DataType.Type.STRUCT: "tuple",
+            sge.DataType.Type.TINYINT: "int8",
+            sge.DataType.Type.UBIGINT: "uint64",
+            sge.DataType.Type.UINT: "uint32",
+            sge.DataType.Type.UINT128: "uint128",
+            sge.DataType.Type.UINT256: "uint256",
+            sge.DataType.Type.USMALLINT: "uint16",
+            sge.DataType.Type.UTINYINT: "uint8",
+            sge.DataType.Type.IPV4: "ipv4",
+            sge.DataType.Type.IPV6: "ipv6",
+            sge.DataType.Type.AGGREGATEFUNCTION: "aggregate_function",
+            sge.DataType.Type.SIMPLEAGGREGATEFUNCTION: "SimpleAggregateFunction",
+        }
+
+        def datatype_sql(self, expression: sge.DataType) -> str:
+            if expression.this in self.STRING_TYPE_MAPPING:
+                dtype = "string"
+            else:
+                dtype = super().datatype_sql(expression)
+            parent = expression.parent
+            nullable = expression.args.get("nullable")
+
+            if nullable is True or (
+                nullable is None
+                and not (
+                    isinstance(parent, sge.DataType)
+                    and parent.is_type(sge.DataType.Type.MAP, check_nullable=True)
+                    and expression.index in (None, 0)
+                )
+                and not expression.is_type(
+                    *self.NON_NULLABLE_TYPES, check_nullable=True
+                )
+            ):
+                expression.args["nullable"] = True
+                dtype = f"{dtype}"
+                dtype = dtype.replace("Nullable", "nullable")
+
+            return dtype

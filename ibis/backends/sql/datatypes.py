@@ -10,7 +10,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
-from ibis.util import get_subclasses
 
 typecode = sge.DataType.Type
 
@@ -1243,7 +1242,91 @@ class DatabricksType(SqlglotType):
     dialect = "databricks"
 
 
+class DatabricksType(SqlglotType):
+    dialect = "databricks"
+
+
 TYPE_MAPPERS = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
 }
+
+class TimeplusType(SqlglotType):
+    dialect = "timeplus"
+    default_decimal_precision = None
+    default_decimal_scale = None
+
+    @classmethod
+    def from_ibis(cls, dtype: dt.DataType) -> sge.DataType:
+        typ = super().from_ibis(dtype)
+
+        if typ.this == typecode.NULLABLE:
+            return typ
+
+        if dtype.nullable:
+            # If the type is already nullable, no need to wrap it again
+            return sge.DataType(this=typecode.NULLABLE, expressions=[typ])
+        else:
+            typ.args["nullable"] = False
+            return typ
+
+    @classmethod
+    def _from_sqlglot_NULLABLE(cls, inner_type: sge.DataType) -> dt.DataType:
+        return cls.to_ibis(inner_type, nullable=True)
+
+    @classmethod
+    def _from_sqlglot_DATETIME(
+        cls, timezone: sge.DataTypeParam | None = None
+    ) -> dt.Timestamp:
+        return dt.Timestamp(
+            scale=0,
+            timezone=None if timezone is None else timezone.this.this,
+            nullable=cls.default_nullable,
+        )
+
+    @classmethod
+    def _from_sqlglot_DATETIME64(
+        cls,
+        scale: sge.DataTypeSize | None = None,
+        timezone: sge.Literal | None = None,
+    ) -> dt.Timestamp:
+        return dt.Timestamp(
+            timezone=None if timezone is None else timezone.this.this,
+            scale=int(scale.this.this),
+            nullable=cls.default_nullable,
+        )
+
+    @classmethod
+    def _from_sqlglot_LOWCARDINALITY(cls, inner_type: sge.DataType) -> dt.DataType:
+        return cls.to_ibis(inner_type)
+
+    @classmethod
+    def _from_sqlglot_NESTED(cls, *fields: sge.DataType) -> dt.Struct:
+        fields = {
+            field.name: dt.Array(
+                cls.to_ibis(field.args["kind"]), nullable=cls.default_nullable
+            )
+            for field in fields
+        }
+        return dt.Struct(fields, nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        if dtype.timezone is None:
+            timezone = None
+        else:
+            timezone = sge.DataTypeParam(this=sge.Literal.string(dtype.timezone))
+
+        if dtype.scale is None:
+            return sge.DataType(this=typecode.DATETIME, expressions=[timezone])
+        else:
+            scale = sge.DataTypeParam(this=sge.Literal.number(dtype.scale))
+            return sge.DataType(this=typecode.DATETIME64, expressions=[scale, timezone])
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+        key_type = cls.from_ibis(dtype.key_type.copy(nullable=False))
+        value_type = cls.from_ibis(dtype.value_type)
+        return sge.DataType(
+            this=typecode.MAP, expressions=[key_type, value_type], nested=True
+        )

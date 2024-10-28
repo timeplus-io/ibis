@@ -69,6 +69,7 @@ aggregate_test_params = [
                     "flink",
                     "exasol",
                     "databricks",
+                    "timeplus",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -107,6 +108,7 @@ aggregate_test_params = [
                     "flink",
                     "risingwave",
                     "exasol",
+                    "timeplus",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -218,6 +220,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
         "flink",
         "exasol",
         "databricks",
+        "timeplus",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -399,6 +402,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "exasol",
                         "flink",
                         "risingwave",
+                        "timeplus",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -418,6 +422,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "oracle",
                         "exasol",
                         "flink",
+                        "timeplus",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -437,6 +442,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "oracle",
                         "exasol",
                         "flink",
+                        "timeplus",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -590,6 +596,7 @@ def test_reduction_ops(
                         "postgres",
                         "risingwave",
                         "snowflake",
+                        "timeplus",
                     ],
                     raises=com.UnsupportedOperationError,
                     reason="`include_null=True` is not supported",
@@ -656,6 +663,7 @@ def test_first_last(alltypes, method, filtered, include_null):
                         "postgres",
                         "risingwave",
                         "snowflake",
+                        "timeplus",
                     ],
                     raises=com.UnsupportedOperationError,
                     reason="`include_null=True` is not supported",
@@ -732,6 +740,7 @@ def test_argmin_argmax(alltypes, method, filtered, null_result):
         "exasol",
         "flink",
         "risingwave",
+        "timeplus",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -991,7 +1000,7 @@ def test_approx_quantile(con, filtered, multi):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite", "flink"],
+                    ["impala", "mysql", "sqlite", "flink", "timeplus"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1055,7 +1064,7 @@ def test_approx_quantile(con, filtered, multi):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala", "sqlite", "flink"],
+                    ["mysql", "impala", "sqlite", "flink", "timeplus"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
@@ -1079,7 +1088,7 @@ def test_approx_quantile(con, filtered, multi):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite", "flink"],
+                    ["impala", "mysql", "sqlite", "flink", "timeplus"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1135,7 +1144,7 @@ def test_corr_cov(
 
 
 @pytest.mark.notimpl(
-    ["mysql", "sqlite", "mssql", "druid"],
+    ["mysql", "sqlite", "mssql", "druid", "timeplus"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError)
@@ -1168,7 +1177,7 @@ def test_median(alltypes, df):
     ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "trino", "flink"],
+    ["impala", "mysql", "mssql", "trino", "flink", "timeplus"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1223,7 +1232,7 @@ def test_string_quantile(alltypes, func):
     ["bigquery", "sqlite", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "trino", "exasol", "flink"],
+    ["impala", "mysql", "mssql", "trino", "exasol", "flink", "timeplus"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1466,6 +1475,9 @@ def test_topk_op(alltypes, df):
 @pytest.mark.notyet(
     ["flink"], raises=Py4JError, reason="Flink doesn't support semi joins"
 )
+@pytest.mark.notyet(
+    ["timeplus"], raises=Py4JError, reason="Timeplus doesn't support semi joins"
+)
 def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -1505,6 +1517,7 @@ def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
         "exasol",
         "flink",
         "databricks",
+        "timeplus",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1554,6 +1567,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "exasol",
         "flink",
         "databricks",
+        "timeplus",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1671,6 +1685,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(["risingwave"], raises=AssertionError, strict=False)
 @pytest.mark.notyet(["databricks"], raises=DatabricksServerOperationError)
+@pytest.mark.notyet(["timeplus"], raises=Exception)
 def test_group_concat_over_window(backend, con):
     # TODO: this test is flaky on risingwave and I DO NOT LIKE IT
     input_df = pd.DataFrame(

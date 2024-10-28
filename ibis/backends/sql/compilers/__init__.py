@@ -18,6 +18,7 @@ __all__ = [
     "RisingWaveCompiler",
     "SnowflakeCompiler",
     "SQLiteCompiler",
+    "TimeplusCompiler",
     "TrinoCompiler",
 ]
 
@@ -38,4 +39,5 @@ from ibis.backends.sql.compilers.pyspark import PySparkCompiler
 from ibis.backends.sql.compilers.risingwave import RisingWaveCompiler
 from ibis.backends.sql.compilers.snowflake import SnowflakeCompiler
 from ibis.backends.sql.compilers.sqlite import SQLiteCompiler
+from ibis.backends.sql.compilers.timeplus import TimeplusCompiler
 from ibis.backends.sql.compilers.trino import TrinoCompiler
