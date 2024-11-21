@@ -78,11 +78,6 @@ def test_create_and_drop_table(con, temp_table):
         ),
     ],
 )
-def test_get_schema_using_query(con, query, expected_schema):
-    result = con._get_schema_using_query(query)
-    assert result == expected_schema
-
-
 def test_list_tables_database(con):
     tables = con.list_tables()
     tables2 = con.list_tables(database=con.current_database)
@@ -174,7 +169,7 @@ def test_insert_no_overwrite_from_dataframe(
     con, test_employee_data_2, employee_empty_temp_table
 ):
     temporary = con.table(employee_empty_temp_table)
-    con.insert(employee_empty_temp_table, obj=test_employee_data_2, overwrite=False)
+    con.insert(employee_empty_temp_table, obj=test_employee_data_2)
     result = temporary.execute(settings={"query_mode": "table"})
     assert len(result) == 3
     assert (

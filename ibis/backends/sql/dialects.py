@@ -491,6 +491,7 @@ Databricks.Generator.TRANSFORMS |= {
     )
 }
 
+
 class Timeplus(ClickHouse):
     """Subclass of ClickHouse dialect for Timeplus.
 
@@ -498,9 +499,7 @@ class Timeplus(ClickHouse):
     """
 
     class Generator(ClickHouse.Generator):
-        TYPE_MAPPING = ClickHouse.Generator.TYPE_MAPPING.copy() | {
-            sge.DataType.Type.NULLABLE: "nullable",
-        }
+        TYPE_MAPPING = ClickHouse.Generator.TYPE_MAPPING.copy() | {}
         STRING_TYPE_MAPPING = ClickHouse.Generator.STRING_TYPE_MAPPING.copy() | {
             sge.DataType.Type.CHAR: "string",
             sge.DataType.Type.LONGBLOB: "string",

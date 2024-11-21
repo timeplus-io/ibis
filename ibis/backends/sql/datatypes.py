@@ -10,6 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
+from ibis.util import get_subclasses
 
 typecode = sge.DataType.Type
 
@@ -172,6 +173,7 @@ class SqlglotType(TypeMapper):
         nullable = typ.args.get(
             "nullable", nullable if nullable is not None else cls.default_nullable
         )
+
         if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
             dtype = method(*typ.expressions, nullable=nullable)
         elif (known_typ := _from_sqlglot_types.get(typecode)) is not None:
@@ -1242,14 +1244,11 @@ class DatabricksType(SqlglotType):
     dialect = "databricks"
 
 
-class DatabricksType(SqlglotType):
-    dialect = "databricks"
-
-
 TYPE_MAPPERS = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
 }
+
 
 class TimeplusType(SqlglotType):
     dialect = "timeplus"
@@ -1257,26 +1256,14 @@ class TimeplusType(SqlglotType):
     default_decimal_scale = None
 
     @classmethod
-    def from_ibis(cls, dtype: dt.DataType) -> sge.DataType:
-        typ = super().from_ibis(dtype)
-
-        if typ.this == typecode.NULLABLE:
-            return typ
-
-        if dtype.nullable:
-            # If the type is already nullable, no need to wrap it again
-            return sge.DataType(this=typecode.NULLABLE, expressions=[typ])
-        else:
-            typ.args["nullable"] = False
-            return typ
-
-    @classmethod
-    def _from_sqlglot_NULLABLE(cls, inner_type: sge.DataType) -> dt.DataType:
+    def _from_sqlglot_NULLABLE(
+        cls, inner_type: sge.DataType, nullable: bool | None = None
+    ) -> dt.DataType:
         return cls.to_ibis(inner_type, nullable=True)
 
     @classmethod
     def _from_sqlglot_DATETIME(
-        cls, timezone: sge.DataTypeParam | None = None
+        cls, timezone: sge.DataTypeParam | None = None, nullable: bool | None = None
     ) -> dt.Timestamp:
         return dt.Timestamp(
             scale=0,
@@ -1289,6 +1276,7 @@ class TimeplusType(SqlglotType):
         cls,
         scale: sge.DataTypeSize | None = None,
         timezone: sge.Literal | None = None,
+        nullable: bool | None = None,
     ) -> dt.Timestamp:
         return dt.Timestamp(
             timezone=None if timezone is None else timezone.this.this,
@@ -1297,11 +1285,15 @@ class TimeplusType(SqlglotType):
         )
 
     @classmethod
-    def _from_sqlglot_LOWCARDINALITY(cls, inner_type: sge.DataType) -> dt.DataType:
+    def _from_sqlglot_LOWCARDINALITY(
+        cls, inner_type: sge.DataType, nullable: bool | None = None
+    ) -> dt.DataType:
         return cls.to_ibis(inner_type)
 
     @classmethod
-    def _from_sqlglot_NESTED(cls, *fields: sge.DataType) -> dt.Struct:
+    def _from_sqlglot_NESTED(
+        cls, *fields: sge.DataType, nullable: bool | None = None
+    ) -> dt.Struct:
         fields = {
             field.name: dt.Array(
                 cls.to_ibis(field.args["kind"]), nullable=cls.default_nullable
@@ -1311,7 +1303,9 @@ class TimeplusType(SqlglotType):
         return dt.Struct(fields, nullable=cls.default_nullable)
 
     @classmethod
-    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+    def _from_ibis_Timestamp(
+        cls, dtype: dt.Timestamp, nullable: bool | None = None
+    ) -> sge.DataType:
         if dtype.timezone is None:
             timezone = None
         else:
@@ -1324,7 +1318,9 @@ class TimeplusType(SqlglotType):
             return sge.DataType(this=typecode.DATETIME64, expressions=[scale, timezone])
 
     @classmethod
-    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+    def _from_ibis_Map(
+        cls, dtype: dt.Map, nullable: bool | None = None
+    ) -> sge.DataType:
         key_type = cls.from_ibis(dtype.key_type.copy(nullable=False))
         value_type = cls.from_ibis(dtype.value_type)
         return sge.DataType(

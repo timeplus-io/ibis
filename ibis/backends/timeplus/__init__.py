@@ -278,6 +278,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             query = query.sql(dialect=self.dialect, pretty=True)
         results = self.con.execute(query)
         names, types = zip(*[(name, type_) for name, type_, *_ in results])
+
         return sch.Schema(
             dict(zip(names, map(self.compiler.type_mapper.from_string, types)))
         )
@@ -397,7 +398,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             Create a temporary table. This is not yet supported, and exists for
             API compatibility.
         overwrite
-            Whether to overwrite the table
+            Whether to overwrite the table. This is not yet supported.
         engine
             The engine to use.
         order_by
@@ -711,10 +712,12 @@ class Backend(SQLBackend, CanCreateDatabase):
         name: str,
         obj: pd.DataFrame | ir.Table,
         database: str | None = None,
-        overwrite: bool = False,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ):
-        # ir.Table, pa.Table, dict, pd.DataFrame
+        if overwrite is not None:
+            raise com.IbisError("`overwrite` namespaces are not supported by timeplus")
+            # ir.Table, pa.Table, dict, pd.DataFrame
         if isinstance(obj, ir.Table):
             statement = InsertSelect(
                 name,
@@ -837,3 +840,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         return pa.ipc.RecordBatchReader.from_batches(
             schema, batcher(sql, schema=schema, settings=settings, **kwargs)
         )
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        """No-op."""
